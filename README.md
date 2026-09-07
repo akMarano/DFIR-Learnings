@@ -51,3 +51,14 @@ Apart from those hives, two other hives containing the user information are foun
 Apart from these files, there is also the **AmCache hive**, located in `C:\Windows\AppCompat\Programs\Amcache.hve`, which holds the information of the programs recently ran on the system.
 
 Lastly, registry transaction logs ans backups are also vital sources of data. The transactions log located at `C:\Windows\System32\Config ` contains the changelog of the registry hive, Windows often uses transaction logs when writing to the registry hives, so these logs can often have the latest changes to the registry data that hasn't been added to the Registry Hive itself. It has the same name as the Registry hive followed by the extension `.LOG`. Registry Backups located at `C:\Windows\System32\Config`, and they copy the `\Windows\System32\Config\RegBack` every 10 days. This is the place to look if you suspect that some registry keys have been changed recently.
+
+## Data Acquisition
+
+When performing forensics, we will face either a live system or an image of the system, it is recommended to practice on an image of the system or a copy of the data. This process is called data acquisition. 
+
+While we can view the registry through the registry editor (`regedit.exe`), the best method is to create a copy of the data and perform analysis on the copy. However, if we try to navigate to where the hives are stored `C:\Windows\System32\Config`, then we'd see that it is a restricted file. 
+
+To acquire the files we can either use **KAPE** which is primarily CLI live data acquisition and analysis tool but it does have a GUI, or **Autopsy** which allows us to extract the data from both live systems or a disk image, or **FTK Imager** which is similar to Autopsy where it allows us to extract the data from a live system or a disk image.
+
+
+

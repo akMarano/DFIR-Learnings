@@ -72,7 +72,7 @@ Registry Viewer uses a similar interface to the Registry editor, however it can 
 
 Registry Explorer has a more complex layout but it can load multiple hives at once and it can add transaction logs into the hive. It also has a Bookmarks option that contains the important registry keys in a forensic investigation. 
 
-### RegRippper
+### RegRipper
 
 RegRippper is a tool that takes the registry hive as input and outputs a report that extracts the data of some of the important registry keys, the output is placed in a text file and shows all the results in sequential order. This tool works in both CLI and GUI. Similarly to Registry Viewer however, it does not add transaction logs to the hives.
 
@@ -123,6 +123,8 @@ In the Registry Keys Field, if start is 0x02 or 2, that means that the service w
 
 Lastly is the Secure Account Management (SAM) Hive which is located at `SAM\Domains\Account\Users`. The information here contains the relative identifier (RID) of the user, how many times the user logged in, last login failed, last password change, password expiry, password policy and password hint, and any groups that the user is a part of. 
 
+## Evidence of File Usage
+
 ### Recent Files
 
 Windows keep track of recently opened files and this includes the time of when these files were last used. The list of these recently opened files can be found at `NTUSER.DAT\Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs`.
@@ -157,6 +159,55 @@ A dialog box appears when we open or save a file, Windows remembers that locatio
 We can also identify the user's recent activity by looking at the paths typed in the Windows Explorer address bar or search bar. This is found at the keys
 - `NTUSER.DAT\Software\Microsoft\Windows\CurrentVersion\Explorer\TypedPaths`
 - `NTUSER.DAT\Software\Microsoft\Windows\CurrentVersion\Explorer\WordWheelQuery`
+
+## Evidence of Execution
+
+### UserAssist
+
+Windows keeps track of applications used by the user, including what program was launched, when it was launched and how many times it was launched. However this doesn't include applications launched in the Command Line. The UserAssit information is stored in the User Assist Registry keys at the NTUSER hive, mapped to the user's GUID (Globally Unique Identifier). The key is at `NTUSER.DAT\Software\Microsoft\Windows\Currentversion\Explorer\UserAssist\{GUID}\Count`
+
+## ShimCache
+
+ShimCache is also known as the Application Compatibility Cache (AppCompatCache), which keeps track of the application compatibility with the OS, and it keeps track of all applications launched, but its main purpose is to ensure backwards compatibility of apps. This is stored at the SYSTEM hive at key `SYSTEM\CurrentControlSet\Control\Session Manager\AppCompatCache `. It stores the file name, file size, and last modified time of executables.
+
+Registry Explorer doesn't have ShimCache data in readable format, so we use another tool called AppCompatCache Parser. It takes SYSTEM hive as input, reads all the data, and then outputs a CSV of the data, which we can view using EZviewer. We can use the command below to run the AppCompatCache Parser.
+```
+AppCompatCacheParser.exe --csv <path to save output> -f <path to SYSTEM hive for data parsing> -c <control set to parse>
+```
+
+## AmCache
+
+AmCache hive is related to the ShimCache where it also stores data related to app launches, but it adds the execution path, installation, execution and deletion times, and SHA1(Secure Hash Algorithm 1) Hashes of the executed programs. This hive is located at `C:\Windows\appcompat\Programs\Amcache.hve`, and the information about the recently launched apps are found at `Amcache.hve\Root\File\{Volume GUID}\`
+
+### BAM/DAM
+
+Background Activity Monitor (BAM) keeps track of the background apps activity. Similarly, Desktop Activity Moderator (DAM), optimizes the power consumption of the device. Both also keep track of the fullpath of the launched apps, and both are part of the Modern Standby System in Microsoft Windows.
+
+We can find these two at the following locations.
+- `SYSTEM\CurrentControlSet\Services\bam\UserSettings\{SID}`
+- `SYSTEM\CurrentControlSet\Services\dam\UserSettings\{SID}`
+
+## Evidence in External Devices
+
+When often need to check if there were any Removable Drives attached the the machine, as the information related to those devices are important.
+
+### Device Identification
+
+We can see the USB Keys plugged into the system along with their vendor id, product id, and version of the USB plugged in, which we can use the identify the devices in the following locations `SYSTEM\CurrentControlSet\Enum\USBSTOR`, and `SYSTEM\CurrentControlSet\Enum\USB`.
+
+### First and Last Connection
+
+We can also find when the device was the first and last time the device was connected into the system. This can be found at `SYSTEM\CurrentControlSet\Enum\USBSTOR\Ven_Prod_Version\<USB Serial Num>\Properties\{83da6326-97a6-4088-9453-a19231573b29}\####`
+
+The `####` is replaced based on the information you want.
+
+- **0064** = First Connection Time
+- **0066** = Last Connection Time
+- **0067** = Last Removal Time
+
+### USB Device Volume Name
+
+The name of the devices connected can be found at `SOFTWARE\Microsoft\Windows Portable Devices\Devices`. We can connect the GUID we see in the registry key and compare it with the Disk ID in the Device Identification to correlate the names with the unique devices.
 
 
 

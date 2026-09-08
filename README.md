@@ -122,3 +122,42 @@ In the Registry Keys Field, if start is 0x02 or 2, that means that the service w
 ### Secure Account Management (SAM) and User Information
 
 Lastly is the Secure Account Management (SAM) Hive which is located at `SAM\Domains\Account\Users`. The information here contains the relative identifier (RID) of the user, how many times the user logged in, last login failed, last password change, password expiry, password policy and password hint, and any groups that the user is a part of. 
+
+### Recent Files
+
+Windows keep track of recently opened files and this includes the time of when these files were last used. The list of these recently opened files can be found at `NTUSER.DAT\Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs`.
+
+Registry Explorer allows us to sort this data using the given tabs. For example the Recent Documents tab shows the most recently used files at the top of the list. What's also interesting is that different file extensions have different keys. So for example if we were looking for recently used `.exe` files we can look at the registry key `NTUSER.DAT\Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs\.pdf`
+
+### Office Recent Files
+
+Microsoft Office also keeps a list of recently opened documents. This can be found at `NTUSER.DAT\Software\Microsoft\Office\<version> `, the registry key is different for every version and application. For example Microsoft Word would use a key like so `NTUSER.DAT\Software\Microsoft\Office\15.0\Word`. In this case this refers to Version 15.0 which is Office 2013.
+
+Starting from Office 365, Microsoft now uses the location tied to the user's live ID which is a Hexadecimal string of your Microsoft Account. This is located at the key `HKEY_CURRENT_USER\Software\Microsoft\Office\<version>\<Office App>\User MRU\LiveId_<Hexadecimal String>\`
+
+### ShellBags
+
+When opening a folder, it opens a specific layout, different folders have different layouts. This layout can be changed by the user according to their preferences. This information is called ShellBags and it can identify the most recently used files and folders. Since this information is unique for each user, it is found in the user hives. They are at the following keys.
+- `USRCLASS.DAT\Local Settings\Software\Microsoft\Windows\Shell\Bags`
+- `USRCLASS.DAT\Local Settings\Software\Microsoft\Windows\Shell\BagMRU`
+- `NTUSER.DAT\Software\Microsoft\Windows\Shell\BagMRU`
+- `NTUSER.DAT\Software\Microsoft\Windows\Shell\Bags` 
+
+Registry Explorer doesn't give much information about ShellBags, but another tool called ShellBag Explorer shows us the information in a friendly format. We just have to point to the hive we extracted and it'll read the data and show us the results.
+
+### Recent Dialog MRUs (Most Recently Used)
+
+A dialog box appears when we open or save a file, Windows remembers that location, meaning we can find recently used files using this information. These are found at the following keys
+
+- `NTUSER.DAT\Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\OpenSavePIDlMRU `
+- `NTUSER.DAT\Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\LastVisitedPidlMRU`
+
+### Windows Explorer Address and Search Bars
+
+We can also identify the user's recent activity by looking at the paths typed in the Windows Explorer address bar or search bar. This is found at the keys
+- `NTUSER.DAT\Software\Microsoft\Windows\CurrentVersion\Explorer\TypedPaths`
+- `NTUSER.DAT\Software\Microsoft\Windows\CurrentVersion\Explorer\WordWheelQuery`
+
+
+
+

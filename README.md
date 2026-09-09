@@ -232,8 +232,20 @@ In summary, bits makes up a file and these bits are stored in clusters. The file
 
 **FAT12, FAT16, and FAT32**
 
+The FAT file format divides the disk space into clusters for better navigation. The original FAT file structure was an 8-bit cluster, but this has now expanded to FAT12, FAT16, FAT32 since storage needs have increased. FAT12 has a maximum of 4096(2^12), FAT16 has 65,536(2^16), FAT32 has 268,435,456(2^28).
 
+The chances of coming across a FAT12 filesystem are very rare nowadays. FAT16 and FAT32 are still used in some places, like USB drives, SD cards, or Digital cameras. However, the maximum file size and volume size (4GB - 1 file size for both FAT16 and FAT32) are limiting factors that have reduced their usage. 
 
+| Attribute | FAT12 | FAT16 | FAT32 |
+| ------- | ------- | ------- | ------- |
+| Addressable bits | 12 | 16 | 28 |
+| Max number of clusters | 4096 | 65,536 | 268,435,456 |
+| Supported Size of Clusters | 512B-8KB | 2KB-32KB | 4KB-32KB |
+| Maximum Volume size | 32MB | 2GB | 2TB |
 
+**exFAT File System**
 
+File sizes have grown so much that even the file limit of FAT32 is a limiting factor. Microsoft has now moved to using NFTS file system, it was not suitable for digital media devices, so they created the exFAT file system.
+
+This exFAT file system is now the default for SD cards larger 32GB. The file system supports file sizes 4KB to 32MB, and it has the maximum file size and volume of 128 PetaBytes. It can have a maximum of 2,796,202 files per directory.
 

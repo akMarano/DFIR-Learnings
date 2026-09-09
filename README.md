@@ -209,6 +209,31 @@ The `####` is replaced based on the information you want.
 
 The name of the devices connected can be found at `SOFTWARE\Microsoft\Windows Portable Devices\Devices`. We can connect the GUID we see in the registry key and compare it with the Disk ID in the Device Identification to correlate the names with the unique devices.
 
+## Artifacts Outside the Windows Registry
+
+Aside from the Windows Registry, we can also find artifacts in the devices file system. We can explore different location and find artifacts to prove file execution, file/folder data or usage, and external device usage. We can also recover deleted files.
+
+A storage device is just a collection of bits, a file system organizes these bits into meaningful information so that they can be interpreted easily.
+
+### File Allocation Table (FAT)
+
+The File Allocation Table is kind of file system that was the old default file system in Microsoft Operating Systems, it is still in use but it is no longer the default file system.
+It creates a table of indexes of the location of the bits that are allocated to the files.
+
+**Data Structures of the FAT System**
+
+- **Cluster** = is a basic storage unit in the FAT file System. Each file is a group of clusters containing bits of information.
+
+- **Directory** = contains the information about the files, like its name, starting cluster, and filename length.
+
+- **File Allocation Table** = A linked list of all clusters, containing the status of the cluster, and filename length.
+
+In summary, bits makes up a file and these bits are stored in clusters. The filename, starting cluster, and their length are stored in directories. The File Allocation Table holds the location of the cluster on the disk.
+
+**FAT12, FAT16, and FAT32**
+
+
+
 
 
 

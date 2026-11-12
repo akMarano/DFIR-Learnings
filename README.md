@@ -25,7 +25,8 @@ All examples use the sample capture `demo.pcapng`. Output is abbreviated where t
 9. [Protocol-specific statistics](#9-protocol-specific-statistics)
 10. [Advanced filtering: `contains`, `matches`, field extraction](#10-advanced-filtering-contains-matches-and-field-extraction)
 11. [Analyst use cases](#11-analyst-use-cases)
-12. [Quick reference and workflow](#12-quick-reference-and-workflow)
+12. [Challenge walkthrough commands (Teamwork and Directory Curiosity)](#12-challenge-walkthrough-commands-teamwork-and-directory-curiosity)
+13. [Quick reference and workflow](#13-quick-reference-and-workflow)
 
 ---
 
@@ -1528,7 +1529,198 @@ The last three are security and scanning tools, not normal browsing. Seeing them
 
 ---
 
-## 12. Quick reference and workflow
+## 12. Challenge walkthrough commands (Teamwork and Directory Curiosity)
+
+Commands from two TryHackMe TShark challenge writeups. Both follow the same idea: find the suspicious domain in DNS, check it on VirusTotal, then dig into the HTTP traffic.
+
+> Lab files contain real malware samples. Only touch them inside the provided VM.
+
+> Some commands in the writeups were only shown as screenshots. Those are marked **(standard command)** below and use the methods from earlier in this guide.
+
+### 12.1 Challenge I: Teamwork (`teamwork.pcap`)
+
+**Goal:** find a phishing domain, what it imitates, its IP, and the email address used.
+
+#### Step 1: List the domains that were looked up
+
+```bash
+tshark -r teamwork.pcap -Y "dns.qry.name" -T fields -e dns.qry.name | uniq
+```
+
+- `-Y "dns.qry.name"`: only DNS packets that contain a queried name
+- `-T fields -e dns.qry.name`: print just the domain name
+- `uniq`: remove repeated lines
+
+**Tip:** `uniq` only removes duplicates that sit next to each other. Use `sort -u` instead to be safe:
+
+```bash
+tshark -r teamwork.pcap -Y "dns.qry.name" -T fields -e dns.qry.name | sort -u
+```
+
+**Result:** 6 domains. One looked off, so it was checked on VirusTotal and confirmed suspicious.
+
+#### Step 2: Defang the domain before writing it down
+
+Done in CyberChef in the writeup. Defanging swaps `.` for `[.]` so the link can't be clicked by accident. A quick terminal version:
+
+```bash
+echo "example.com" | sed 's/\./[.]/g'
+```
+
+- `sed 's/\./[.]/g'`: replace every `.` with `[.]`
+
+**Answer format:** `www[.]paypal[.]com4uswebappsresetaccountrecovery[.]timeseaways[.]com`
+
+#### Step 3: First-submitted date, impersonated service, and IP
+
+These answers came from the **VirusTotal** page for the domain (manual, not TShark):
+
+- First submission date: `2017-04-17 22:52:53 UTC`
+- Service being impersonated: PayPal
+- IP address: `184[.]154[.]127[.]226`
+
+To get the IP from the capture itself **(standard command)**:
+
+```bash
+tshark -r teamwork.pcap -Y "dns.flags.response == 1" -T fields -e dns.qry.name -e dns.a
+```
+
+- `dns.flags.response == 1`: only DNS **replies**
+- `-e dns.qry.name -e dns.a`: the name asked for and the IP it resolved to
+
+#### Step 4: Find the email address used
+
+```bash
+tshark -r teamwork.pcap -Y "http contains gmail.com" -V
+```
+
+- `http contains gmail.com`: HTTP packets that include the text `gmail.com` anywhere
+- `-V`: show full packet details so you can read the email address inside
+
+**Answer:** `johnny5alive[at]gmail[.]com`
+
+> The writeup typed `shark` instead of `tshark`, which is a typo.
+
+**Teamwork summary**
+
+| Question | Method |
+|----------|--------|
+| Suspicious domain | DNS names list, then VirusTotal |
+| First submitted | VirusTotal details page |
+| Impersonated service | Read the domain name and VirusTotal |
+| Domain IP | VirusTotal, or DNS replies in TShark |
+| Email address | `http contains gmail.com` with `-V` |
+
+### 12.2 Challenge II: Directory Curiosity (`directory-curiosity.pcap`)
+
+**Goal:** confirm a true positive: a user browsed an open file index and downloaded malware.
+
+#### Step 1: List DNS queries and count them **(standard command)**
+
+```bash
+tshark -r directory-curiosity.pcap -T fields -e dns.qry.name | awk NF | sort -r | uniq -c | sort -r
+```
+
+- Pulls every queried domain, removes blank lines, and counts duplicates (the cleanup pipeline from section 11)
+
+Check the domains on VirusTotal. Malicious one: `jx2-bavuong[.]com`
+
+#### Step 2: Count HTTP requests to that domain **(standard command)**
+
+```bash
+tshark -r directory-curiosity.pcap -Y 'http.request and http.host contains "jx2-bavuong.com"' | nl
+```
+
+- `http.request`: only requests (not responses)
+- `http.host contains "..."`: only requests to that domain
+- `nl`: numbers the lines so you can count them
+
+**Answer:** 14
+
+#### Step 3: Find the server's IP **(standard command)**
+
+```bash
+tshark -r directory-curiosity.pcap -Y 'http.host contains "jx2-bavuong.com"' -T fields -e ip.dst -e http.host | sort | uniq -c
+```
+
+- Shows the destination IP for requests to that domain
+
+**Answer:** `141[.]164[.]41[.]174`
+
+#### Step 4: Find the web server software **(standard command)**
+
+```bash
+tshark -r directory-curiosity.pcap -Y 'http.server' -T fields -e http.server | sort -u
+```
+
+- `http.server`: the `Server:` header in HTTP responses
+
+**Answer:** `Apache/2.2.11 (Win32) DAV/2 mod_ssl/2.2.11 OpenSSL/0.9.8i PHP/5.2.9`
+
+#### Step 5: Read the first TCP stream as text **(standard command)**
+
+```bash
+tshark -r directory-curiosity.pcap -q -z follow,tcp,ascii,0
+```
+
+- `-z follow,tcp,ascii,0`: rebuild TCP stream number `0` and print it as readable text
+- `-q`: hide the normal packet lines
+
+This shows the open directory listing the user saw: **3 files**, the first being `123[.]php`.
+
+#### Step 6: Export the files that were downloaded
+
+```bash
+tshark -r directory-curiosity.pcap --export-objects http,/home/ubuntu/Desktop/exercise-files -q
+```
+
+- `--export-objects http,<folder>`: save every file that was transferred over HTTP into that folder
+- `-q`: hide the normal packet lines
+
+> The writeup shows `— export-objects` because Medium turned the two dashes into one long dash. The real flag is `--export-objects`.
+
+**Found:** the downloaded executable `vlauto[.]exe`
+
+#### Step 7: Hash the file
+
+```bash
+sha256sum vlauto.exe
+```
+
+- `sha256sum`: a normal Linux command (not TShark) that prints the file's SHA256 hash
+
+**Answer:** `b4851333efaf399889456f78eac0fd532e9d8791b23a86a19402c1164aed20de`
+
+#### Step 8: Check the hash on VirusTotal (manual)
+
+- PEiD packer: `.NET executable`
+- Lastline Sandbox verdict: `MALWARE TROJAN`
+
+**Directory Curiosity summary**
+
+| Question | Method |
+|----------|--------|
+| Malicious domain | DNS list, then VirusTotal |
+| HTTP requests to it | `http.request` plus `http.host contains` plus `nl` |
+| Server IP | `ip.dst` field |
+| Server software | `http.server` field |
+| Files listed | `follow,tcp,ascii,0` |
+| Downloaded malware | `--export-objects http,<folder>` |
+| File hash | `sha256sum <file>` |
+
+### 12.3 New commands from the challenges
+
+| Command | What it does |
+|---------|--------------|
+| `-z follow,tcp,ascii,<n>` | Rebuilds TCP stream `n` and prints it as text |
+| `--export-objects http,<folder>` | Saves files sent over HTTP to a folder |
+| `http contains "<text>"` | Finds HTTP packets containing the text |
+| `http.request and http.host contains "<domain>"` | Requests to one domain |
+| `sha256sum <file>` | Hashes a file (Linux, not TShark) |
+
+---
+
+## 13. Quick reference and workflow
 
 ### Flags
 

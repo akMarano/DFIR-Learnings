@@ -100,7 +100,7 @@ The most significant bits of the X registers (AX, BX, CX, and DX) can be accesse
 - AL is the lower 8 bits
 - AH is the bits 8-15
 
-**Segment Registers **
+**Segment Registers**
 
 Memory is divided into sections, the code, stack and data segments and more. Segment registers identify the starting location of these sections. Nowadays many applications and OS have these registers pointing to the same locations (generally zero) to disable them. Windows uses GS to store thread related data, while linux uses it to save per-CPU information.
 
